@@ -1,9 +1,9 @@
 /**
- * Created with IntelliJ IDEA.
- * User: Ganaraj.Pr
- * Date: 11/10/13
- * Time: 11:27
- * To change this template use File | Settings | File Templates.
+ * Project: Angular-DragDrop
+ * Author: Ganaraj.Pr
+ * Contributors: LiamKarlMitchell
+ * GitHub: http://ganarajpr.github.io/angular-dragdrop
+ * LastModified: Fri May 23 2014 14:59:13 GMT+1200 (NZST)
  */
 angular.module("ngDragDrop",[])
     .directive("uiDraggable", [
@@ -23,7 +23,11 @@ angular.module("ngDragDrop",[])
                     dragData = newValue;
                 });
                 element.bind("dragstart", function (e) {
-                    var sendData = angular.toJson(dragData);
+                    var sendData = "";
+                    $rootScope.$root.draganddrop_data = dragData;
+                    if (dragData) {
+                        sendData = angular.toJson(dragData);
+                    }
                     var sendChannel = attrs.dragChannel || "defaultchannel";
                     var dragImage = attrs.dragImage || null;
                     if (dragImage) {
@@ -38,9 +42,14 @@ angular.module("ngDragDrop",[])
                         });
                     }
 
-                    e.dataTransfer.setData("Text", sendData);
-                    $rootScope.$broadcast("ANGULAR_DRAG_START", sendChannel);
+                    var dragDataExp = "";
+                    if (scope.$$watchers[0].exp && scope[scope.$$watchers[0].exp] !== undefined) {
+                        dragDataExp = scope.$$watchers[0].exp;
+                    }
 
+                    e.dataTransfer.setData("Text", sendData);
+                    $rootScope.$root.draganddrop_exp = dragDataExp;
+                    $rootScope.$broadcast("ANGULAR_DRAG_START", sendChannel);
                 });
 
                 element.bind("dragend", function (e) {
@@ -54,6 +63,7 @@ angular.module("ngDragDrop",[])
                             });
                         }
                     }
+                    delete $rootScope.$root.draganddrop_data;
                 });
 
 
@@ -81,20 +91,58 @@ angular.module("ngDragDrop",[])
                         e.stopPropagation();
                     }
                     e.dataTransfer.dropEffect = 'move';
+
+                    var result = _processDropEvent(e,'uiCanDrop');
+
+                    // If the result from canDrop was a true or false we want to allow or deny dropping.
+                    // If it was undefined or null then no action is done.
+                    // The uiCanDrop function could set e.dataTransfer.dropEffect = 'some value it wants' and return nothing.
+                    if (result == true) {
+                        e.dataTransfer.dropEffect = 'all';
+                    } else if (result == false) {
+                        e.dataTransfer.dropEffect = 'none';
+                    }
+
                     return false;
                 }
 
                 function onDragLeave(e) {
-                  dragging--;
-                  if (dragging == 0) {
-                    element.removeClass(dragHoverClass);
-                  }
+                    dragging--;
+                    if (dragging == 0) {
+                        element.removeClass(dragHoverClass);
+                    }
+
+                    e.dataTransfer.dropEffect = 'all';
                 }
 
                 function onDragEnter(e) {
                     dragging++;
                     $rootScope.$broadcast("ANGULAR_HOVER", dropChannel);
                     element.addClass(dragHoverClass);
+
+                    var result = _processDropEvent(e,'uiCanDrop');
+
+                    // If the result from canDrop was a true or false we want to allow or deny dropping.
+                    // If it was undefined or null then no action is done.
+                    // The uiCanDrop function could set e.dataTransfer.dropEffect = 'some value it wants' and return nothing.
+                    if (result == true) {
+                        e.dataTransfer.dropEffect = 'all';
+                    } else if (result == false) {
+                        e.dataTransfer.dropEffect = 'none';
+                    }
+
+                }
+
+                // Yes I could get functionName from e.type in a switch case but
+                // I think its better to pass it in directly as I am not sure about cross browser if all things use same event names. (IE...)
+                function _processDropEvent(e, functionName) {
+                    var data = $rootScope.$root.draganddrop_data;
+                    var fn = $parse(attr[functionName]);
+                    var result = scope.$apply(function () {
+                        return fn(scope, {$data: data, $event: e});
+                    });
+
+                    return result;
                 }
 
                 function onDrop(e) {
@@ -104,12 +152,7 @@ angular.module("ngDragDrop",[])
                     if (e.stopPropagation) {
                         e.stopPropagation(); // Necessary. Allows us to drop.
                     }
-                    var data = e.dataTransfer.getData("Text");
-                    data = angular.fromJson(data);
-                    var fn = $parse(attr.uiOnDrop);
-                    scope.$apply(function () {
-                        fn(scope, {$data: data, $event: e});
-                    });
+                    _processDropEvent(e,'uiOnDrop');
                     element.removeClass(dragEnterClass);
                 }
 

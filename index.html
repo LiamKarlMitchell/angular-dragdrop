@@ -173,6 +173,24 @@
     The <code>ui-on-drop</code> callback can request additional parameters. The data that is dragged is available to the
     callback as <code>$data</code>. Apart from this the drop event is exposed as <code>$event</code>.
     </p>
+
+    <h3 class="text-info"><em>ui-can-drop</em></h3>
+
+    <p>
+        directive in module <em>ngDragDrop</em>
+    </p>
+
+    <p>The <code>ui-can-drop</code> attribute is used to confirm or deny a drop in a region.
+        Takes a function as the attribute value. The function will be called when a valid dragged element is dropped in
+        that location. It is optional.
+        A valid dragged element is one which has the same channel as the drop location.
+        Return <code>true</code> to allow the drop, <code>false</code> to deny the drop.
+        You can give the function the arguments <code>$event</code> and <code>$data</code>.
+
+    The <code>ui-on-drop</code> callback can request additional parameters. The data that is dragged is available to the
+    callback as <code>$data</code>. Apart from this the drop event is exposed as <code>$event</code>.
+    </p>
+
     <h3 class="heading"><strong>Additional Attributes</strong></h3>
 
     <h4 class="text-info"><em>drop-channel</em></h4>
@@ -198,6 +216,53 @@
 
     <p>
 
+    Example of usage in tmpl with filter and order by:
+    <code><pre>
+&lt;table class='organise-table'>
+    &lt;tr ng-repeat="thing in things | filter:thing_name_filter | orderBy:'name' track by thing.id"
+        ui-draggable="true" drag="thing"
+        on-drop-success="dropSuccessHandler($event, thing.id, things)">
+        &lt;td>
+            &lt;div>
+                {{thing.name}}
+            &lt;/div>
+        &lt;/td>
+    &lt;/tr>
+&lt;/table></pre>
+    </code>
+
+    Example of the events in a controller:
+    <code><pre>
+    /**
+     * Handle Drag and Drop of thing to a things list.
+     * This would go in your controller.
+     *
+     */
+    $scope.dropSuccessHandler = function(event,id){
+        for (var i=0;i&lt;$scope.things.length;i++) {
+            if ($scope.things[i].id === id) {
+                $scope.things.splice(i,1);
+                return;
+            }
+        }
+    };
+
+    $scope.onDrop = function(event, thing){
+        thing.group_id = $scope.group_id;
+
+        // Save to database
+        thing.$update().then(function () {
+        }); // TODO deal with error response.
+        $scope.things.push(thing);
+    };
+
+    $scope.canDrop = function(event, thing) {
+        if ($scope.group_id === thing.group_id) {
+            return false;
+        }
+    }</pre>
+    </code>
+
     <div hljs>
         <ANY ui-on-drop="onDrop($data,$event)" drop-channel="mydropchannel" drag-enter-class="dragEnter">...</ANY>
     </div>
@@ -219,6 +284,12 @@
             <td>ui-on-drop</td>
             <td><label class="text-muted">function</label></td>
             <td>Takes any <code>$scope</code> function. Can also pass <code>$event</code> and <code>$data</code>.
+            </td>
+        </tr>
+        <tr>
+            <td>ui-can-drop</td>
+            <td><label class="text-muted">function</label></td>
+            <td>Takes any <code>$scope</code> function. Can also pass <code>$event</code> and <code>$data</code>. Return false to deny a drop.
             </td>
         </tr>
         <tr>
