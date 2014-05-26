@@ -42,13 +42,9 @@ angular.module("ngDragDrop",[])
                         });
                     }
 
-                    var dragDataExp = "";
-                    if (scope.$$watchers[0].exp && scope[scope.$$watchers[0].exp] !== undefined) {
-                        dragDataExp = scope.$$watchers[0].exp;
-                    }
-
                     e.dataTransfer.setData("Text", sendData);
-                    $rootScope.$root.draganddrop_exp = dragDataExp;
+                    $rootScope.$root.draganddrop_exp = attrs.drag;
+                    $rootScope.$root.draganddrop_scope = scope;
                     $rootScope.$broadcast("ANGULAR_DRAG_START", sendChannel);
                 });
 
@@ -63,6 +59,7 @@ angular.module("ngDragDrop",[])
                             });
                         }
                     }
+                    delete $rootScope.$root.draganddrop_scope
                     delete $rootScope.$root.draganddrop_data;
                 });
 
@@ -139,7 +136,7 @@ angular.module("ngDragDrop",[])
                     var data = $rootScope.$root.draganddrop_data;
                     var fn = $parse(attr[functionName]);
                     var result = scope.$apply(function () {
-                        return fn(scope, {$data: data, $event: e});
+                        return fn(scope, {$data: data, $event: e, $draggedScope: $rootScope.$root.draganddrop_scope});
                     });
 
                     return result;
@@ -154,6 +151,9 @@ angular.module("ngDragDrop",[])
                     }
                     _processDropEvent(e,'uiOnDrop');
                     element.removeClass(dragEnterClass);
+
+                    delete $rootScope.$root.draganddrop_scope
+                    delete $rootScope.$root.draganddrop_data;
                 }
 
 
