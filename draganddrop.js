@@ -3,7 +3,7 @@
  * Author: Ganaraj.Pr
  * Contributors: LiamKarlMitchell
  * GitHub: http://ganarajpr.github.io/angular-dragdrop
- * LastModified: Fri May 23 2014 14:59:13 GMT+1200 (NZST)
+ * LastModified: Monday May 26 2014 15:31:21 GMT+1200 (NZST)
  */
 angular.module("ngDragDrop",[])
     .directive("uiDraggable", [
@@ -55,12 +55,14 @@ angular.module("ngDragDrop",[])
                         if (attrs.onDropSuccess) {
                             var fn = $parse(attrs.onDropSuccess);
                             scope.$apply(function () {
-                                fn(scope, {$event: e});
+                                fn(scope, {$event: e, $droppedScope: $rootScope.$root.draganddrop_dropscope});
                             });
                         }
                     }
-                    delete $rootScope.$root.draganddrop_scope
+
+                    delete $rootScope.$root.draganddrop_scope;
                     delete $rootScope.$root.draganddrop_data;
+                    delete $rootScope.$root.draganddrop_dropscope;
                 });
 
 
@@ -152,8 +154,7 @@ angular.module("ngDragDrop",[])
                     _processDropEvent(e,'uiOnDrop');
                     element.removeClass(dragEnterClass);
 
-                    delete $rootScope.$root.draganddrop_scope
-                    delete $rootScope.$root.draganddrop_data;
+                    $rootScope.$root.draganddrop_dropscope = scope;
                 }
 
 
